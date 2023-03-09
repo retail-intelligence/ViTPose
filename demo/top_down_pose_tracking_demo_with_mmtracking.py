@@ -15,7 +15,7 @@ try:
     has_mmtrack = True
 except (ImportError, ModuleNotFoundError):
     has_mmtrack = False
-
+import tqdm
 
 def process_mmtracking_results(mmtracking_results):
     """Process mmtracking results.
@@ -105,80 +105,85 @@ def main():
     cap = cv2.VideoCapture(args.video_path)
     assert cap.isOpened(), f'Faild to load video file {args.video_path}'
 
-    if args.out_video_root == '':
-        save_out_video = False
-    else:
-        os.makedirs(args.out_video_root, exist_ok=True)
-        save_out_video = True
+    try:
+        length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    if save_out_video:
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        videoWriter = cv2.VideoWriter(
-            os.path.join(args.out_video_root,
-                         f'vis_{os.path.basename(args.video_path)}'), fourcc,
-            fps, size)
-
-    # optional
-    return_heatmap = False
-
-    # e.g. use ('backbone', ) to return backbone feature
-    output_layer_names = None
-
-    frame_id = 0
-    while (cap.isOpened()):
-        flag, img = cap.read()
-        if not flag:
-            break
-
-        mmtracking_results = inference_mot(
-            tracking_model, img, frame_id=frame_id)
-
-        # keep the person class bounding boxes.
-        person_results = process_mmtracking_results(mmtracking_results)
-
-        # test a single image, with a list of bboxes.
-        pose_results, returned_outputs = inference_top_down_pose_model(
-            pose_model,
-            img,
-            person_results,
-            bbox_thr=args.bbox_thr,
-            format='xyxy',
-            dataset=dataset,
-            dataset_info=dataset_info,
-            return_heatmap=return_heatmap,
-            outputs=output_layer_names)
-
-        # show the results
-        vis_img = vis_pose_tracking_result(
-            pose_model,
-            img,
-            pose_results,
-            radius=args.radius,
-            thickness=args.thickness,
-            dataset=dataset,
-            dataset_info=dataset_info,
-            kpt_score_thr=args.kpt_thr,
-            show=False)
-
-        if args.show:
-            cv2.imshow('Image', vis_img)
+        if args.out_video_root == '':
+            save_out_video = False
+        else:
+            os.makedirs(args.out_video_root, exist_ok=True)
+            save_out_video = True
 
         if save_out_video:
-            videoWriter.write(vis_img)
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            size = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                    int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            videoWriter = cv2.VideoWriter(
+                os.path.join(args.out_video_root,
+                            f'vis_{os.path.basename(args.video_path)}'), fourcc,
+                fps, size)
 
-        if args.show and cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        # optional
+        return_heatmap = False
 
-        frame_id += 1
+        # e.g. use ('backbone', ) to return backbone feature
+        output_layer_names = None
 
-    cap.release()
-    if save_out_video:
-        videoWriter.release()
-    if args.show:
-        cv2.destroyAllWindows()
+        frame_id = 0
+        with tqdm.tqdm(total=length) as pbar:
+            while (cap.isOpened()):
+                flag, img = cap.read()
+                if not flag:
+                    break
+
+                mmtracking_results = inference_mot(
+                    tracking_model, img, frame_id=frame_id)
+
+                # keep the person class bounding boxes.
+                person_results = process_mmtracking_results(mmtracking_results)
+
+                # test a single image, with a list of bboxes.
+                pose_results, returned_outputs = inference_top_down_pose_model(
+                    pose_model,
+                    img,
+                    person_results,
+                    bbox_thr=args.bbox_thr,
+                    format='xyxy',
+                    dataset=dataset,
+                    dataset_info=dataset_info,
+                    return_heatmap=return_heatmap,
+                    outputs=output_layer_names)
+
+                # show the results
+                vis_img = vis_pose_tracking_result(
+                    pose_model,
+                    img,
+                    pose_results,
+                    radius=args.radius,
+                    thickness=args.thickness,
+                    dataset=dataset,
+                    dataset_info=dataset_info,
+                    kpt_score_thr=args.kpt_thr,
+                    show=False)
+
+                if args.show:
+                    cv2.imshow('Image', vis_img)
+
+                if save_out_video:
+                    videoWriter.write(vis_img)
+
+                if args.show and cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+
+                frame_id += 1
+                pbar.update(1)
+    finally:
+        cap.release()
+        if save_out_video and videoWriter is not None:
+            videoWriter.release()
+        if args.show:
+            cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
