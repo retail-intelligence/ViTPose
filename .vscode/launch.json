@@ -1,0 +1,29 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "top_down_pose_tracking_demo_with_mmtracking",
+            "type": "python",
+            "request": "launch",
+            "program": "demo/top_down_pose_tracking_demo_with_mmtracking.py",
+            "args": [
+                "demo/mmtracking_cfg/tracktor_faster-rcnn_r50_fpn_4e_mot17-private.py",
+                "configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/res50_coco_256x192.py",
+                "https://download.openmmlab.com/mmpose/top_down/resnet/res50_coco_256x192-ec54d7f3_20200709.pth",
+                "--video-path",
+                // "demo/resources/demo.mp4",
+                // "test_data/video/video4.mp4",
+                "test_data/video/garagem.mp4",
+                "--out-video-root",
+                "vis_results",
+                "--device",
+                "cpu"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }
+    ]
+}
