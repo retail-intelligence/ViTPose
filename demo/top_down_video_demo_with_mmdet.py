@@ -14,6 +14,10 @@ try:
     has_mmdet = True
 except (ImportError, ModuleNotFoundError):
     has_mmdet = False
+import time
+
+import numpy as np
+import tqdm
 
 
 def main():
@@ -89,6 +93,7 @@ def main():
     cap = cv2.VideoCapture(args.video_path)
     assert cap.isOpened(), f'Faild to load video file {args.video_path}'
 
+    length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     if args.out_video_root == '':
         save_out_video = False
     else:
@@ -110,49 +115,58 @@ def main():
 
     # e.g. use ('backbone', ) to return backbone feature
     output_layer_names = None
+    ts_mmdet = []
+    ts_pose = []
+    with tqdm.tqdm(total=length) as pbar:
+        while (cap.isOpened()):
+            flag, img = cap.read()
+            if not flag:
+                break
 
-    while (cap.isOpened()):
-        flag, img = cap.read()
-        if not flag:
-            break
-        # test a single image, the resulting box is (x1, y1, x2, y2)
-        mmdet_results = inference_detector(det_model, img)
+            t0_mmdet = time.perf_counter()
+            # test a single image, the resulting box is (x1, y1, x2, y2)
+            mmdet_results = inference_detector(det_model, img)
 
-        # keep the person class bounding boxes.
-        person_results = process_mmdet_results(mmdet_results, args.det_cat_id)
+            # keep the person class bounding boxes.
+            person_results = process_mmdet_results(mmdet_results, args.det_cat_id)
+            ts_mmdet.append(time.perf_counter() - t0_mmdet)
 
-        # test a single image, with a list of bboxes.
-        pose_results, returned_outputs = inference_top_down_pose_model(
-            pose_model,
-            img,
-            person_results,
-            bbox_thr=args.bbox_thr,
-            format='xyxy',
-            dataset=dataset,
-            dataset_info=dataset_info,
-            return_heatmap=return_heatmap,
-            outputs=output_layer_names)
+            t0_pose = time.perf_counter()
+            # test a single image, with a list of bboxes.
+            pose_results, returned_outputs = inference_top_down_pose_model(
+                pose_model,
+                img,
+                person_results,
+                bbox_thr=args.bbox_thr,
+                format='xyxy',
+                dataset=dataset,
+                dataset_info=dataset_info,
+                return_heatmap=return_heatmap,
+                outputs=output_layer_names)
+            ts_pose.append(time.perf_counter() - t0_pose)
 
-        # show the results
-        vis_img = vis_pose_result(
-            pose_model,
-            img,
-            pose_results,
-            dataset=dataset,
-            dataset_info=dataset_info,
-            kpt_score_thr=args.kpt_thr,
-            radius=args.radius,
-            thickness=args.thickness,
-            show=False)
+            # show the results
+            vis_img = vis_pose_result(
+                pose_model,
+                img,
+                pose_results,
+                dataset=dataset,
+                dataset_info=dataset_info,
+                kpt_score_thr=args.kpt_thr,
+                radius=args.radius,
+                thickness=args.thickness,
+                show=False)
 
-        if args.show:
-            cv2.imshow('Image', vis_img)
+            if args.show:
+                cv2.imshow('Image', vis_img)
 
-        if save_out_video:
-            videoWriter.write(vis_img)
+            if save_out_video:
+                videoWriter.write(vis_img)
 
-        if args.show and cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+            if args.show and cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+            
+            pbar.update(1)
 
     cap.release()
     if save_out_video:
@@ -160,6 +174,8 @@ def main():
     if args.show:
         cv2.destroyAllWindows()
 
+    print(np.mean(ts_mmdet), ts_mmdet)
+    print(np.mean(ts_pose), ts_pose)
 
 if __name__ == '__main__':
     main()
