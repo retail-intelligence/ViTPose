@@ -166,4 +166,5 @@ imgs/
 
 mmpose/.mim
 test_data
-vis_results
+*_results
+models/

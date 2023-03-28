@@ -14,9 +14,9 @@
                 "configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/res50_coco_256x192.py",
                 "https://download.openmmlab.com/mmpose/top_down/resnet/res50_coco_256x192-ec54d7f3_20200709.pth",
                 "--video-path",
-                // "demo/resources/demo.mp4",
+                "demo/resources/demo.mp4",
                 // "test_data/video/video4.mp4",
-                "test_data/video/garagem.mp4",
+                // "test_data/video/garagem.mp4",
                 "--out-video-root",
                 "vis_results",
                 "--device",
@@ -24,6 +24,46 @@
             ],
             "console": "integratedTerminal",
             "justMyCode": false
+        },
+        {
+            "name": "top_down_no_track",
+            "type": "python",
+            "request": "launch",
+            "program": "demo/top_down_video_demo_with_mmdet.py",
+            "args": [
+                "demo/mmdetection_cfg/faster_rcnn_r50_fpn_coco.py",
+                "https://download.openmmlab.com/mmdetection/v2.0/faster_rcnn/faster_rcnn_r50_fpn_1x_coco/faster_rcnn_r50_fpn_1x_coco_20200130-047c8118.pth",
+                // "configs/wholebody/2d_kpt_sview_rgb_img/topdown_heatmap/coco-wholebody/ViTPose_small_wholebody_256x192.py",
+                // "models/ViTPose_small_wholebody_256x192/wholebody.pth",
+                "configs/wholebody/2d_kpt_sview_rgb_img/topdown_heatmap/coco-wholebody/ViTPose_small_wholebody_256x192.py",
+                "models/vitPose+_small_coco+aic+mpii+ap10k+apt36k+wholebody_256x192_udp/wholebody.pth",
+                "--video-path",
+                "demo/resources/demo.mp4",
+                // "test_data/video/video4.mp4",
+                // "test_data/video/garagem.mp4",
+                "--out-video-root",
+                "vitpose_results",
+                "--device",
+                "cpu"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "test",
+            "type": "python",
+            "request": "launch",
+            "program": "tools/test.py",
+            "args": [
+                "configs/wholebody/2d_kpt_sview_rgb_img/topdown_heatmap/coco-wholebody/ViTPose_small_wholebody_256x192.py",
+                "models/ViTPose_small_wholebody_256x192.pth",
+                // "configs/body/2d_kpt_sview_rgb_img/topdown_heatmap/coco/vitPose+_small_coco+aic+mpii+ap10k+apt36k+wholebody_256x192_udp.py",
+                // "models/vitPose+_small_coco+aic+mpii+ap10k+apt36k+wholebody_256x192_udp.pth",
+                // "--launcher",
+                // "pytorch",
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": true
         }
     ]
 }
