@@ -160,7 +160,7 @@ def add_mim_extension():
 if __name__ == '__main__':
     add_mim_extension()
     setup(
-        name='mmpose',
+        name='vitpose',
         version=get_version(),
         description='OpenMMLab Pose Estimation Toolbox and Benchmark.',
         author='MMPose Contributors',
